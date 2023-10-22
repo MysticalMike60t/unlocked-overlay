@@ -1,12 +1,27 @@
 import time
 import tkinter as tk
 from PIL import Image, ImageDraw, ImageTk
-import threading  # Add this import for threading
+import threading
+import tempfile  # Import tempfile for creating temporary files
+import os
 
 def close_after_5_seconds():
+    # Add the cleanup here before destroying the window
+    cleanup_temp_file(temp_file_name)
     root.destroy()
 
+import os
+
 def create_rounded_rectangle_image(width, height, radius, bg_color, border_color):
+    temp_folder = "temp"  # Specify the temporary folder name
+    os.makedirs(temp_folder, exist_ok=True)  # Create the temporary folder if it doesn't exist
+
+    # Create a temporary file inside the "temp" folder
+    temp_file_name = os.path.join(temp_folder, "rounded_rectangle.png")
+
+    print(f"Temporary folder: {temp_folder}")
+    print(f"Temporary file: {temp_file_name}")
+
     image = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent background
     draw = ImageDraw.Draw(image)
     draw.rectangle((0, 0, width, height), fill=bg_color, outline=border_color)
@@ -15,8 +30,9 @@ def create_rounded_rectangle_image(width, height, radius, bg_color, border_color
     draw.pieslice((width - 2 * radius, 0, width, 2 * radius), 0, 90, fill=bg_color, outline=border_color)
     draw.pieslice((0, height - 2 * radius, 2 * radius, height), 180, 270, fill=bg_color, outline=border_color)
     draw.pieslice((width - 2 * radius, height - 2 * radius, width, height), 270, 360, fill=bg_color, outline=border_color)
+    image.save(temp_file_name, "PNG")
 
-    return ImageTk.PhotoImage(image)
+    return ImageTk.PhotoImage(Image.open(temp_file_name)), temp_file_name
 
 def typewriter_animation(text_widget, text, delay=50):
     for i in range(1, len(text) + 1):
@@ -33,6 +49,12 @@ def blink_cursor(cursor_label, cursor_text, visible_delay=500, invisible_delay=5
         cursor_label.update()
         time.sleep(invisible_delay / 1000)
 
+def cleanup_temp_file(file_name):
+    try:
+        os.remove(file_name)
+    except Exception as e:
+        print(f"Failed to delete temp file: {e}")
+
 root = tk.Tk()
 root.overrideredirect(True)
 
@@ -45,15 +67,18 @@ window_width = 400
 window_height = 200
 corner_radius = 20
 
-# Create a rounded rectangle image
-shape_image = create_rounded_rectangle_image(window_width, window_height, corner_radius, bg_color, bg_color)
+# Create a rounded rectangle image and get the temporary file name
+shape_image, temp_file_name = create_rounded_rectangle_image(window_width, window_height, corner_radius, bg_color, bg_color)
 
 # Create a canvas with the same dimensions as the image
 canvas = tk.Canvas(root, width=window_width, height=window_height, highlightthickness=0)
 canvas.pack()
 
-# Create the label with rounded corners
-canvas.create_image(window_width / 2, window_height / 2, image=shape_image)
+# Store the ImageTk object in a global variable
+canvas.shape_image = shape_image
+
+# Use the canvas as you did before to create the image
+canvas.create_image(window_width / 2, window_height / 2, image=canvas.shape_image)
 
 # Create a label for typewriter text
 typewriter_label = tk.Label(root, text="", font=("Segoe UI", 36), fg=text_color, bg=bg_color)
