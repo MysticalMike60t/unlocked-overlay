@@ -5,6 +5,8 @@
 
 # Custom Additions
 /release
+/dist
+/build
 
 # User-specific files
 *.rsuser
